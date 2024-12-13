@@ -3,70 +3,174 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Display</title>
+    <title>Simple Display and Management</title>
     <style>
         body {
+            font-family: Arial, sans-serif;
             margin: 0;
-            overflow: hidden;
-            background-color: black;
+            padding: 0;
+        }
+        .admin-panel {
+            padding: 20px;
+            background: #f4f4f4;
+        }
+        .admin-panel input, .admin-panel button {
+            margin: 5px 0;
+            display: block;
+        }
+        .file-list {
+            margin: 10px 0;
+        }
+        #display {
+            background: black;
+            color: white;
+            height: 100vh;
             display: flex;
             justify-content: center;
             align-items: center;
+            flex-direction: column;
         }
         img, video {
             max-width: 100%;
             max-height: 100%;
         }
+        .hidden {
+            display: none;
+        }
     </style>
 </head>
 <body>
+
+<div id="display">
+    <h1>Display Mode</h1>
     <div id="media-container"></div>
+</div>
 
-    <script>
-        let files = []; // เก็บข้อมูลไฟล์
-        let currentIndex = 0; // ลำดับไฟล์ปัจจุบัน
+<div class="admin-panel">
+    <h2>Admin Panel</h2>
+    <input type="file" id="fileInput">
+    <button onclick="uploadFile()">Upload</button>
+    <div class="file-list">
+        <h3>File List</h3>
+        <ul id="fileList"></ul>
+    </div>
+    <button onclick="saveConfig()">Save Configuration</button>
+    <button onclick="toggleDisplay()">Switch to Display Mode</button>
+</div>
 
-        // โหลดข้อมูลไฟล์จาก API
-        function loadFiles() {
-            fetch('https://kkclcd-ol9jud19j-basnakhu1999s-projects.vercel.app/lcd/api/getFiles') // เปลี่ยน URL เป็นของ Vercel หลัง deploy
-                .then(response => response.json())
-                .then(data => {
-                    files = data;
-                    if (files.length > 0) showFile(0); // เริ่มแสดงไฟล์แรก
-                })
-                .catch(error => console.error('Error loading files:', error));
+<script>
+    const dataFile = 'data.json';
+    const uploadsFolder = './uploads/';
+    let files = [];
+
+    // Load files from JSON (simulate simple backend)
+    function loadFiles() {
+        fetch(dataFile)
+            .then(response => response.json())
+            .then(data => {
+                files = data;
+                renderFileList();
+            })
+            .catch(err => console.error('Error loading files:', err));
+    }
+
+    // Save configuration to JSON file
+    function saveConfig() {
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(new Blob([JSON.stringify(files, null, 2)], { type: 'application/json' }));
+        a.download = 'data.json';
+        a.click();
+        alert('Configuration saved!');
+    }
+
+    // Render file list in admin panel
+    function renderFileList() {
+        const fileList = document.getElementById('fileList');
+        fileList.innerHTML = '';
+        files.forEach((file, index) => {
+            const li = document.createElement('li');
+            li.innerHTML = `
+                ${file.name} (Duration: <input type="number" value="${file.duration}" onchange="updateDuration(${index}, this.value)" /> seconds)
+                <button onclick="deleteFile(${index})">Delete</button>
+                <button onclick="moveFile(${index}, -1)">Move Up</button>
+                <button onclick="moveFile(${index}, 1)">Move Down</button>
+            `;
+            fileList.appendChild(li);
+        });
+    }
+
+    // Update file duration
+    function updateDuration(index, duration) {
+        files[index].duration = parseInt(duration, 10) || 5;
+    }
+
+    // Delete a file
+    function deleteFile(index) {
+        files.splice(index, 1);
+        renderFileList();
+    }
+
+    // Move file up or down
+    function moveFile(index, direction) {
+        const newIndex = index + direction;
+        if (newIndex >= 0 && newIndex < files.length) {
+            [files[index], files[newIndex]] = [files[newIndex], files[index]];
+            renderFileList();
         }
+    }
 
-        // ฟังก์ชันแสดงไฟล์ทีละไฟล์
-        function showFile(index) {
-            const container = document.getElementById('media-container');
-            container.innerHTML = ''; // ล้างเนื้อหาเก่า
-            currentIndex = index;
+    // Upload file (simulate by adding to list)
+    function uploadFile() {
+        const fileInput = document.getElementById('fileInput');
+        if (fileInput.files.length > 0) {
+            const file = fileInput.files[0];
+            files.push({ name: file.name, duration: 5 });
+            renderFileList();
+            alert('File uploaded: ' + file.name);
+        }
+    }
 
-            const file = files[index];
-            const duration = file.duration * 1000; // ระยะเวลาแสดงผล (แปลงเป็น ms)
+    // Toggle between admin panel and display mode
+    function toggleDisplay() {
+        document.querySelector('.admin-panel').classList.toggle('hidden');
+        document.getElementById('display').classList.toggle('hidden');
+        if (!document.getElementById('display').classList.contains('hidden')) {
+            startDisplay();
+        }
+    }
 
+    // Start display mode
+    function startDisplay() {
+        const container = document.getElementById('media-container');
+        let currentIndex = 0;
+
+        function showNext() {
+            container.innerHTML = '';
+            const file = files[currentIndex];
             let mediaElement;
             if (file.name.endsWith('.mp4')) {
                 mediaElement = document.createElement('video');
-                mediaElement.src = `uploads/${file.name}`;
+                mediaElement.src = uploadsFolder + file.name;
                 mediaElement.autoplay = true;
-                mediaElement.loop = true; // เล่นซ้ำ
+                mediaElement.loop = true;
             } else {
                 mediaElement = document.createElement('img');
-                mediaElement.src = `uploads/${file.name}`;
+                mediaElement.src = uploadsFolder + file.name;
             }
             container.appendChild(mediaElement);
 
-            // แสดงไฟล์ถัดไปเมื่อครบเวลา
             setTimeout(() => {
-                const nextIndex = (index + 1) % files.length; // วนกลับไปเริ่มที่ไฟล์แรกถ้าจบ
-                showFile(nextIndex);
-            }, duration);
+                currentIndex = (currentIndex + 1) % files.length;
+                showNext();
+            }, file.duration * 1000);
         }
 
-        // โหลดไฟล์และเริ่มแสดงผล
-        loadFiles();
-    </script>
+        if (files.length > 0) showNext();
+    }
+
+    // Load initial files
+    loadFiles();
+</script>
+
 </body>
 </html>

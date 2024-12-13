@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Panel</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .file-item { margin: 10px 0; display: flex; align-items: center; }
+        .file-item input { margin-right: 10px; }
+        .file-item button { margin-left: 10px; }
+    </style>
+</head>
+<body>
+    <h1>Admin Panel</h1>
+    <form id="uploadForm">
+        <h2>Upload File</h2>
+        <input type="file" name="file" required>
+        <button type="submit">Upload</button>
+    </form>
+
+    <div id="file-list">
+        <h2>Manage Files</h2>
+    </div>
+
+    <script>
+        const apiUrl = 'https://kkclcd.vercel.app/lcd/api'; // เปลี่ยนเป็น URL ของ Vercel เมื่ออัปโหลด
+
+        function loadFiles() {
+            fetch(`${apiUrl}/getFiles`)
+                .then(res => res.json())
+                .then(data => {
+                    const container = document.getElementById('file-list');
+                    container.innerHTML = '';
+                    data.forEach((file, index) => {
+                        const fileItem = document.createElement('div');
+                        fileItem.className = 'file-item';
+                        fileItem.innerHTML = `
+                            <input type="text" value="${file.duration}" onchange="updateDuration(${index}, this.value)">
+                            <span>${file.name}</span>
+                            <button onclick="deleteFile('${file.name}')">Delete</button>
+                            <button onclick="move(${index}, 'up')">Move Up</button>
+                            <button onclick="move(${index}, 'down')">Move Down</button>
+                        `;
+                        container.appendChild(fileItem);
+                    });
+                });
+        }
+
+        document.getElementById('uploadForm').addEventListener('submit', function (e) {
+            e.preventDefault();
+            const formData = new FormData(this);
+            fetch(`${apiUrl}/upload`, { method: 'POST', body: formData })
+                .then(() => loadFiles());
+        });
+
+        function updateDuration(index, duration) {
+            fetch(`${apiUrl}/updateDuration`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ index, duration })
+            }).then(() => loadFiles());
+        }
+
+        function deleteFile(fileName) {
+            fetch(`${apiUrl}/delete/${fileName}`, { method: 'DELETE' }).then(() => loadFiles());
+        }
+
+        function move(index, direction) {
+            fetch(`${apiUrl}/move`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ index, direction })
+            }).then(() => loadFiles());
+        }
+
+        loadFiles();
+    </script>
+</body>
+</html>

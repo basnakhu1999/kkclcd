@@ -1,6 +1,6 @@
 // script.js
 const SUPABASE_URL = 'https://qizejcrlxqailqjrqkeo.supabase.co';  // เปลี่ยนเป็น URL ของโปรเจคคุณ
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFpemVqY3JseHFhaWxxanJxa2VvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzQwNzU2MjksImV4cCI6MjA0OTY1MTYyOX0.wN-5phYnElhU7IPQQ6B8jehoJGD89POzJjXMWg511cg';  // เปลี่ยนเป็น Key ของโปรเจคคุณ
+const SUPABASE_KEY = 'your-anon-key';  // เปลี่ยนเป็น Key ของโปรเจคคุณ
 
 // สร้างตัวเชื่อมต่อกับ Supabase
 const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -8,10 +8,19 @@ const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 async function fetchImages() {
     try {
         // ดึงรายการไฟล์จาก Supabase Storage
-        const { data, error } = await supabase.storage.from('restaurant-files').list('uploads');
+        const { data, error } = await supabase.storage.from('restaurant-files').list('uploads', {
+            // เพิ่มตัวเลือกเพื่อดึงข้อมูลไฟล์ที่มีการตั้งค่า public URL
+            limit: 10,
+            offset: 0
+        });
 
         if (error) {
             throw error;
+        }
+
+        if (data.length === 0) {
+            document.getElementById('image-container').innerHTML = 'No images found.';
+            return;
         }
 
         // แสดงผลไฟล์ที่ดึงมา

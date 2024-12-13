@@ -1,1 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Display</title>
+    <style>
+        body { margin: 0; overflow: hidden; background: black; display: flex; justify-content: center; align-items: center; }
+        img, video { max-width: 100%; max-height: 100%; }
+    </style>
+</head>
+<body>
+    <div id="media-container"></div>
+
+    <script>
+        let files = []; // เก็บไฟล์ทั้งหมด
+        let currentIndex = 0; // ลำดับไฟล์ปัจจุบัน
+
+        // โหลดข้อมูลไฟล์จาก API
+        function loadFiles() {
+            fetch('api.php?action=getFiles')
+                .then(response => response.json())
+                .then(data => {
+                    files = data;
+                    if (files.length > 0) showFile(0);
+                });
+        }
+
+        // แสดงไฟล์ทีละไฟล์
+        function showFile(index) {
+            const container = document.getElementById('media-container');
+            container.innerHTML = ''; // ล้างเนื้อหาเดิม
+            currentIndex = index;
+
+            const file = files[index];
+            const duration = file.duration * 1000; // ระยะเวลา (ms)
+
+            let media;
+            if (file.name.endsWith('.mp4')) {
+                media = document.createElement('video');
+                media.src = `uploads/${file.name}`;
+                media.autoplay = true;
+                media.loop = true;
+            } else {
+                media = document.createElement('img');
+                media.src = `uploads/${file.name}`;
+            }
+            container.appendChild(media);
+
+            // เปลี่ยนไปแสดงไฟล์ถัดไปเมื่อครบเวลา
+            setTimeout(() => {
+                const nextIndex = (index + 1) % files.length; // วนกลับไปไฟล์แรกถ้าถึงไฟล์สุดท้าย
+                showFile(nextIndex);
+            }, duration);
+        }
+
+        // โหลดไฟล์เมื่อเริ่มต้น
+        loadFiles();
+    </script>
+</body>
+</html>
 

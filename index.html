@@ -3,174 +3,40 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Simple Display and Management</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 0;
-            padding: 0;
-        }
-        .admin-panel {
-            padding: 20px;
-            background: #f4f4f4;
-        }
-        .admin-panel input, .admin-panel button {
-            margin: 5px 0;
-            display: block;
-        }
-        .file-list {
-            margin: 10px 0;
-        }
-        #display {
-            background: black;
-            color: white;
-            height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            flex-direction: column;
-        }
-        img, video {
-            max-width: 100%;
-            max-height: 100%;
-        }
-        .hidden {
-            display: none;
-        }
-    </style>
+    <title>Display</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+    <script src="script.js"></script>
 </head>
 <body>
+    <div id="mediaContainer"></div>
 
-<div id="display">
-    <h1>Display Mode</h1>
-    <div id="media-container"></div>
-</div>
-
-<div class="admin-panel">
-    <h2>Admin Panel</h2>
-    <input type="file" id="fileInput">
-    <button onclick="uploadFile()">Upload</button>
-    <div class="file-list">
-        <h3>File List</h3>
-        <ul id="fileList"></ul>
-    </div>
-    <button onclick="saveConfig()">Save Configuration</button>
-    <button onclick="toggleDisplay()">Switch to Display Mode</button>
-</div>
-
-<script>
-    const dataFile = 'data.json';
-    const uploadsFolder = './uploads/';
-    let files = [];
-
-    // Load files from JSON (simulate simple backend)
-    function loadFiles() {
-        fetch(dataFile)
-            .then(response => response.json())
-            .then(data => {
-                files = data;
-                renderFileList();
-            })
-            .catch(err => console.error('Error loading files:', err));
-    }
-
-    // Save configuration to JSON file
-    function saveConfig() {
-        const a = document.createElement('a');
-        a.href = URL.createObjectURL(new Blob([JSON.stringify(files, null, 2)], { type: 'application/json' }));
-        a.download = 'data.json';
-        a.click();
-        alert('Configuration saved!');
-    }
-
-    // Render file list in admin panel
-    function renderFileList() {
-        const fileList = document.getElementById('fileList');
-        fileList.innerHTML = '';
-        files.forEach((file, index) => {
-            const li = document.createElement('li');
-            li.innerHTML = `
-                ${file.name} (Duration: <input type="number" value="${file.duration}" onchange="updateDuration(${index}, this.value)" /> seconds)
-                <button onclick="deleteFile(${index})">Delete</button>
-                <button onclick="moveFile(${index}, -1)">Move Up</button>
-                <button onclick="moveFile(${index}, 1)">Move Down</button>
-            `;
-            fileList.appendChild(li);
-        });
-    }
-
-    // Update file duration
-    function updateDuration(index, duration) {
-        files[index].duration = parseInt(duration, 10) || 5;
-    }
-
-    // Delete a file
-    function deleteFile(index) {
-        files.splice(index, 1);
-        renderFileList();
-    }
-
-    // Move file up or down
-    function moveFile(index, direction) {
-        const newIndex = index + direction;
-        if (newIndex >= 0 && newIndex < files.length) {
-            [files[index], files[newIndex]] = [files[newIndex], files[index]];
-            renderFileList();
-        }
-    }
-
-    // Upload file (simulate by adding to list)
-    function uploadFile() {
-        const fileInput = document.getElementById('fileInput');
-        if (fileInput.files.length > 0) {
-            const file = fileInput.files[0];
-            files.push({ name: file.name, duration: 5 });
-            renderFileList();
-            alert('File uploaded: ' + file.name);
-        }
-    }
-
-    // Toggle between admin panel and display mode
-    function toggleDisplay() {
-        document.querySelector('.admin-panel').classList.toggle('hidden');
-        document.getElementById('display').classList.toggle('hidden');
-        if (!document.getElementById('display').classList.contains('hidden')) {
-            startDisplay();
-        }
-    }
-
-    // Start display mode
-    function startDisplay() {
-        const container = document.getElementById('media-container');
-        let currentIndex = 0;
-
-        function showNext() {
-            container.innerHTML = '';
-            const file = files[currentIndex];
-            let mediaElement;
-            if (file.name.endsWith('.mp4')) {
-                mediaElement = document.createElement('video');
-                mediaElement.src = uploadsFolder + file.name;
-                mediaElement.autoplay = true;
-                mediaElement.loop = true;
-            } else {
-                mediaElement = document.createElement('img');
-                mediaElement.src = uploadsFolder + file.name;
+    <script>
+        async function displayFiles() {
+            const files = await readSaveFile();
+            const container = document.getElementById('mediaContainer');
+            for (const file of files) {
+                if (file.type === 'image') {
+                    const img = document.createElement('img');
+                    img.src = `https://${SUPABASE_URL}/storage/v1/object/public/${bucketName}/uploads/${file.filename}`;
+                    img.style.maxWidth = '100%';
+                    container.appendChild(img);
+                    await new Promise(resolve => setTimeout(resolve, file.duration * 1000));
+                    container.innerHTML = '';
+                } else if (file.type === 'video') {
+                    const video = document.createElement('video');
+                    video.src = `https://${SUPABASE_URL}/storage/v1/object/public/${bucketName}/uploads/${file.filename}`;
+                    video.controls = false;
+                    video.autoplay = true;
+                    video.style.maxWidth = '100%';
+                    container.appendChild(video);
+                    await new Promise(resolve => setTimeout(resolve, file.duration * 1000));
+                    container.innerHTML = '';
+                }
             }
-            container.appendChild(mediaElement);
-
-            setTimeout(() => {
-                currentIndex = (currentIndex + 1) % files.length;
-                showNext();
-            }, file.duration * 1000);
+            displayFiles(); // Loop back
         }
 
-        if (files.length > 0) showNext();
-    }
-
-    // Load initial files
-    loadFiles();
-</script>
-
+        displayFiles();
+    </script>
 </body>
 </html>

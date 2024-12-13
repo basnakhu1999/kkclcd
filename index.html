@@ -3,40 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Display</title>
+    <title>Display Media</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
-    <script src="script.js"></script>
+    <script src="script.js" defer></script>
 </head>
 <body>
-    <div id="mediaContainer"></div>
-
-    <script>
-        async function displayFiles() {
-            const files = await readSaveFile();
-            const container = document.getElementById('mediaContainer');
-            for (const file of files) {
-                if (file.type === 'image') {
-                    const img = document.createElement('img');
-                    img.src = `https://${SUPABASE_URL}/storage/v1/object/public/${bucketName}/uploads/${file.filename}`;
-                    img.style.maxWidth = '100%';
-                    container.appendChild(img);
-                    await new Promise(resolve => setTimeout(resolve, file.duration * 1000));
-                    container.innerHTML = '';
-                } else if (file.type === 'video') {
-                    const video = document.createElement('video');
-                    video.src = `https://${SUPABASE_URL}/storage/v1/object/public/${bucketName}/uploads/${file.filename}`;
-                    video.controls = false;
-                    video.autoplay = true;
-                    video.style.maxWidth = '100%';
-                    container.appendChild(video);
-                    await new Promise(resolve => setTimeout(resolve, file.duration * 1000));
-                    container.innerHTML = '';
-                }
-            }
-            displayFiles(); // Loop back
-        }
-
-        displayFiles();
-    </script>
+    <div id="media-container"></div>
 </body>
 </html>

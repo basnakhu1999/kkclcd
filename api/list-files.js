@@ -7,6 +7,7 @@ export default async function handler(req, res) {
     const FOLDER = 'media';
 
     try {
+        console.log('Fetching files from Cloudinary, folder:', FOLDER);
         const response = await fetch(
             `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/resources/search`,
             {
@@ -24,6 +25,7 @@ export default async function handler(req, res) {
         );
 
         const data = await response.json();
+        console.log('Cloudinary response:', JSON.stringify(data, null, 2));
 
         if (!response.ok || data.error) {
             console.error('Cloudinary API error:', data.error || response.statusText);
@@ -35,6 +37,7 @@ export default async function handler(req, res) {
             secure_url: resource.secure_url
         }));
 
+        console.log('Files found:', files.length, files.map(f => f.public_id));
         res.status(200).json({ files });
     } catch (error) {
         console.error('Server error:', error.message);

@@ -1,9 +1,9 @@
-const API_KEY = 'AIzaSyAeBhec1Z1fw2g0MOgCP28f8TII9j0zct8'; // ใช้ API Key ที่คุณให้มา
-const FOLDER_ID = '1LJQ29KTc6nWm72y9WlX-yMbPFp2F2ClJ'; // ใช้ Folder ID ที่คุณให้มา
+const API_KEY = 'AIzaSyAeBhec1Z1fw2g0MOgCP28f8TII9j0zct8';
+const FOLDER_ID = '1LJQ29KTc6nWm72y9WlX-yMbPFp2F2ClJ';
 const IMAGE_EXTENSIONS = ['jpg', 'jpeg', 'png'];
 const VIDEO_EXTENSIONS = ['mp4', 'webm'];
-const IMAGE_DURATION = 30000; // 30 วินาทีต่อภาพ
-const CHECK_INTERVAL = 3600000; // 1 ชั่วโมง
+const IMAGE_DURATION = 30000;
+const CHECK_INTERVAL = 3600000;
 
 let files = [];
 let currentIndex = 0;
@@ -31,7 +31,7 @@ function fetchFiles() {
     console.log('Fetching files from Google Drive...');
     gapi.client.drive.files.list({
         q: `'${FOLDER_ID}' in parents and trashed=false`,
-        fields: 'files(id, name, mimeType, webContentLink)'
+        fields: 'files(id, name, mimeType)'
     }).then(response => {
         console.log('Files fetched:', response.result.files);
         files = response.result.files.filter(file => {
@@ -46,6 +46,10 @@ function fetchFiles() {
     }).catch(error => {
         console.error('Error fetching files:', error);
     });
+}
+
+function getFileUrl(fileId) {
+    return `https://drive.google.com/uc?export=download&id=${fileId}`;
 }
 
 function showNextSlide() {
@@ -63,18 +67,19 @@ function showNextSlide() {
     const file = files[currentIndex];
     console.log('Displaying file:', file.name);
     const ext = file.name.split('.').pop().toLowerCase();
+    const fileUrl = getFileUrl(file.id);
 
     if (IMAGE_EXTENSIONS.includes(ext)) {
-        imageElement.src = file.webContentLink;
+        imageElement.src = fileUrl;
         imageElement.style.display = 'block';
         setTimeout(showNextSlide, IMAGE_DURATION);
     } else if (VIDEO_EXTENSIONS.includes(ext)) {
-        videoElement.src = file.webContentLink;
+        videoElement.src = fileUrl;
         videoElement.style.display = 'block';
         videoElement.onended = showNextSlide;
         videoElement.play().catch(error => {
             console.error('Error playing video:', error);
-            showNextSlide(); // ข้ามไปสไลด์ถัดไปถ้าเล่นวิดิโอไม่ได้
+            showNextSlide();
         });
     }
 

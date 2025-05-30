@@ -12,6 +12,7 @@ async function fetchFiles() {
     try {
         const response = await fetch('/api/list-files');
         const data = await response.json();
+        console.log('Response from /api/list-files:', JSON.stringify(data, null, 2));
 
         if (!response.ok || data.error) {
             throw new Error(data.error || 'Failed to fetch files');
@@ -20,13 +21,18 @@ async function fetchFiles() {
         files = data.files
             .filter(file => {
                 const ext = file.public_id.split('.').pop().toLowerCase();
-                return IMAGE_EXTENSIONS.includes(ext) || VIDEO_EXTENSIONS.includes(ext);
+                const isSupported = IMAGE_EXTENSIONS.includes(ext) || VIDEO_EXTENSIONS.includes(ext);
+                if (!isSupported) {
+                    console.warn('Unsupported file:', file.public_id, 'Extension:', ext);
+                }
+                return isSupported;
             })
             .map(file => ({
                 url: file.secure_url,
                 type: IMAGE_EXTENSIONS.includes(file.public_id.split('.').pop().toLowerCase()) ? 'image' : 'video'
             }));
 
+        console.log('Filtered files:', files.length, files.map(f => f.url));
         if (files.length === 0) {
             console.warn('No supported files found.');
             document.getElementById('media-container').innerHTML = '<p>No media found.</p>';

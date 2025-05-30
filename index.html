@@ -3,43 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Google Drive Media Display</title>
-    <style>
-        body {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            margin: 0;
-            background-color: #f0f0f0;
-            overflow: hidden; /* Prevent scrollbars */
-        }
-        #media-container {
-            width: 80vw; /* Adjust as needed */
-            height: 80vh; /* Adjust as needed */
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            background-color: #fff;
-            box-shadow: 0 0 10px rgba(0,0,0,0.1);
-        }
-        #slide-image, #slide-video {
-            max-width: 100%;
-            max-height: 100%;
-            object-fit: contain; /* Ensures content fits without cropping */
-            display: none; /* Hidden by default */
-        }
-    </style>
+    <title>LED Slideshow</title>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <div id="media-container">
-        <img id="slide-image" alt="Google Drive Image">
-        <video id="slide-video" controls muted autoplay playsinline>
-            Your browser does not support the video tag.
-        </video>
+        <img id="slide-image" src="" alt="Slideshow Image" style="display: none;">
+        <video id="slide-video" autoplay muted style="display: none;"></video>
     </div>
-
-    <script async defer src="https://apis.google.com/js/api.js"></script>
+    <script src="https://apis.google.com/js/api.js"></script>
     <script src="script.js"></script>
 </body>
 </html>

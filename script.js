@@ -64,7 +64,7 @@ function fetchFiles() {
 }
 
 function getFileUrl(fileId) {
-    return `https://drive.google.com/uc?export=download&id=${fileId}`;
+    return `/api/proxy?id=${fileId}`; // Use proxy endpoint
 }
 
 async function showNextSlide() {

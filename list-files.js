@@ -2,7 +2,7 @@ const fetch = require('node-fetch');
 
 export default async function handler(req, res) {
     const DROPBOX_ACCESS_TOKEN = process.env.DROPBOX_ACCESS_TOKEN; // เก็บใน Vercel Environment Variables
-    const DROPBOX_FOLDER_PATH = '/media'; // โฟลเดอร์ใน Dropbox
+    const DROPBOX_FOLDER_PATH = '/kkclcd'; // โฟลเดอร์ใน Dropbox
 
     try {
         const response = await fetch('https://api.dropboxapi.com/2/files/list_folder', {

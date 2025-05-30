@@ -1,64 +1,43 @@
 const fetch = require('node-fetch');
 
 export default async function handler(req, res) {
-    const DROPBOX_ACCESS_TOKEN = process.env.DROPBOX_ACCESS_TOKEN; // เก็บใน Vercel Environment Variables
-    const DROPBOX_FOLDER_PATH = '/kkclcd'; // โฟลเดอร์ใน Dropbox
+    const CLOUDINARY_CLOUD_NAME = process.env.CLOUDINARY_CLOUD_NAME;
+    const CLOUDINARY_API_KEY = process.env.CLOUDINARY_API_KEY;
+    const CLOUDINARY_API_SECRET = process.env.CLOUDINARY_API_SECRET;
+    const FOLDER = 'media';
 
     try {
-        const response = await fetch('https://api.dropboxapi.com/2/files/list_folder', {
-            method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${DROPBOX_ACCESS_TOKEN}`,
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                path: DROPBOX_FOLDER_PATH,
-                recursive: false
-            })
-        });
+        const response = await fetch(
+            `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/resources/search`,
+            {
+                method: 'POST',
+                headers: {
+                    'Authorization': 'Basic ' + Buffer.from(`${CLOUDINARY_API_KEY}:${CLOUDINARY_API_SECRET}`).toString('base64'),
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    expression: `folder:${FOLDER}`,
+                    max_results: 100,
+                    resource_type: 'image,video'
+                })
+            }
+        );
 
         const data = await response.json();
 
         if (!response.ok || data.error) {
-            console.error('Dropbox API error:', data.error || response.statusText);
-            return res.status(response.status).json({ error: 'Failed to fetch files from Dropbox' });
+            console.error('Cloudinary API error:', data.error || response.statusText);
+            return res.status(response.status).json({ error: 'Failed to fetch files from Cloudinary' });
         }
 
-        // ดึง Shared Link สำหรับแต่ละไฟล์
-        const files = await Promise.all(data.entries.map(async (entry) => {
-            if (entry['.tag'] !== 'file') return null;
-            try {
-                const linkResponse = await fetch('https://api.dropboxapi.com/2/sharing/create_shared_link_with_settings', {
-                    method: 'POST',
-                    headers: {
-                        'Authorization': `Bearer ${DROPBOX_ACCESS_TOKEN}`,
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        path: entry.path_lower,
-                        settings: { access: 'viewer', allow_download: true }
-                    })
-                });
-
-                const linkData = await linkResponse.json();
-                if (linkData.error) {
-                    console.error(`Error getting shared link for ${entry.name}:`, linkData.error);
-                    return null;
-                }
-
-                return {
-                    name: entry.name,
-                    url: linkData.url
-                };
-            } catch (error) {
-                console.error(`Error processing file ${entry.name}:`, error);
-                return null;
-            }
+        const files = data.resources.map(resource => ({
+            public_id: resource.public_id,
+            secure_url: resource.secure_url
         }));
 
-        res.status(200).json({ files: files.filter(file => file !== null) });
+        res.status(200).json({ files });
     } catch (error) {
-        console.error('Server error:', error);
+        console.error('Server error:', error.message);
         res.status(500).json({ error: 'Server error: ' + error.message });
     }
 }

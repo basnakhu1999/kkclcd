@@ -10,7 +10,7 @@ let slideTimeout;
 async function fetchFiles() {
     console.log('Fetching files from Dropbox...');
     try {
-        const response = await fetch('/api/list-files');
+        const response = await fetch('/list-files');
         const data = await response.json();
 
         if (!response.ok || data.error) {

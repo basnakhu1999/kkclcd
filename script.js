@@ -2,6 +2,7 @@ const IMAGE_EXTENSIONS = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
 const VIDEO_EXTENSIONS = ['mp4', 'webm', 'ogg'];
 const IMAGE_DURATION = 30000; // 30 seconds
 const CHECK_INTERVAL = 3600000; // 1 hour
+const TRANSITION_DURATION = 1000; // 1 second for fade
 
 let files = [];
 let currentIndex = 0;
@@ -14,7 +15,7 @@ async function fetchFiles() {
         const data = await response.json();
         console.log('Response from /api/list-files:', JSON.stringify(data, null, 2));
 
-        if (!response.ok || data.error) {
+        if (!response.ok || data.error || data.error) {
             throw new Error(data.error || 'Failed to fetch files');
         }
 
@@ -57,8 +58,9 @@ function showNextSlide() {
     const imageElement = document.getElementById('slide-image');
     const videoElement = document.getElementById('slide-video');
 
-    imageElement.style.display = 'none';
-    videoElement.style.display = 'none';
+    // ซ่อนสื่อปัจจุบัน
+    imageElement.classList.remove('visible');
+    videoElement.classList.remove('visible');
     videoElement.pause();
     videoElement.src = '';
 
@@ -70,30 +72,38 @@ function showNextSlide() {
     const file = files[currentIndex];
     console.log('Displaying file:', file.url);
 
-    if (file.type === 'image') {
-        imageElement.src = file.url;
-        imageElement.style.display = 'block';
-        imageElement.onerror = () => {
-            console.error('Error loading image:', file.url);
-            document.getElementById('media-container').innerHTML = `<p>Error loading ${file.url}. Skipping...</p>`;
-            setTimeout(showNextSlide, 2000);
-        };
-        slideTimeout = setTimeout(showNextSlide, IMAGE_DURATION);
-    } else if (file.type === 'video') {
-        videoElement.src = file.url;
-        videoElement.style.display = 'block';
-        videoElement.onended = showNextSlide;
-        videoElement.onerror = () => {
-            console.error('Error loading video:', file.url);
-            document.getElementById('media-container').innerHTML = `<p>Error loading ${file.url}. Skipping...</p>`;
-            setTimeout(showNextSlide, 2000);
-        };
-        videoElement.load();
-        videoElement.play().catch(error => {
-            console.error('Error playing video:', file.url, error);
-            showNextSlide();
-        });
-    }
+    // ฟังก์ชันสำหรับแสดงสื่อใหม่
+    const displayMedia = () => {
+        if (file.type === 'image') {
+            imageElement.src = file.url;
+            imageElement.classList.add('visible'); // เริ่ม fade-in
+            imageElement.onerror = () => {
+                console.error('Error loading image:', file.url);
+                document.getElementById('media-container').innerHTML = `<p>Error loading ${file.url}. Skipping...</p>`;
+                setTimeout(showNextSlide, 2000);
+            };
+            slideTimeout = setTimeout(showNextSlide, IMAGE_DURATION + TRANSITION_DURATION);
+        } else if (file.type === 'video') {
+            videoElement.src = file.url;
+            videoElement.classList.add('visible'); // เริ่ม fade-in
+            videoElement.onended = () => {
+                setTimeout(showNextSlide, TRANSITION_DURATION); // รอ fade-out ก่อนเปลี่ยน
+            };
+            videoElement.onerror = () => {
+                console.error('Error loading video:', file.url);
+                document.getElementById('media-container').innerHTML = `<p>Error loading ${file.url}. Skipping...</p>`;
+                setTimeout(showNextSlide, 2000);
+            };
+            videoElement.load();
+            videoElement.play().catch(error => {
+                console.error('Error playing video:', file.url, error);
+                showNextSlide();
+            });
+        }
+    };
+
+    // รอให้ fade-out เสร็จก่อนแสดงสื่อใหม่
+    setTimeout(displayMedia, TRANSITION_DURATION);
 
     currentIndex = (currentIndex + 1) % files.length;
 }

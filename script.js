@@ -8,9 +8,9 @@ let currentIndex = 0;
 let slideTimeout;
 
 async function fetchFiles() {
-    console.log('Fetching files from Dropbox...');
+    console.log('Fetching files from Cloudinary...');
     try {
-        const response = await fetch('/list-files');
+        const response = await fetch('/api/list-files');
         const data = await response.json();
 
         if (!response.ok || data.error) {
@@ -19,12 +19,12 @@ async function fetchFiles() {
 
         files = data.files
             .filter(file => {
-                const ext = file.name.split('.').pop().toLowerCase();
+                const ext = file.public_id.split('.').pop().toLowerCase();
                 return IMAGE_EXTENSIONS.includes(ext) || VIDEO_EXTENSIONS.includes(ext);
             })
             .map(file => ({
-                url: file.url.replace('?dl=0', '?raw=1'), // แปลง Shared Link เป็น Direct Link
-                type: IMAGE_EXTENSIONS.includes(file.name.split('.').pop().toLowerCase()) ? 'image' : 'video'
+                url: file.secure_url,
+                type: IMAGE_EXTENSIONS.includes(file.public_id.split('.').pop().toLowerCase()) ? 'image' : 'video'
             }));
 
         if (files.length === 0) {

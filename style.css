@@ -13,6 +13,7 @@ body {
     align-items: center;
     aspect-ratio: 9 / 16;
     background: black;
+    position: relative; /* ทำให้ img และ video ทับซ้อนกันได้ */
 }
 
 #slide-image, #slide-video {
@@ -21,4 +22,14 @@ body {
     width: 100%;
     height: 100%;
     object-fit: contain;
+    position: absolute; /* วาง img และ video ในตำแหน่งเดียวกัน */
+    top: 0;
+    left: 100%;
+    opacity: 0; /* เริ่มต้นที่มองไม่เห็น */
+    transition: opacity 1s ease-in-out; /* Transition สำหรับ fade 1 วินาที */
+}
+
+/* คลาสสำหรับแสดงสื่อ */
+.visible {
+    opacity: 1 !important; /* ทำให้มองเห็นเมื่อเพิ่มคลาส visible */
 }

@@ -49,7 +49,7 @@ function fetchFiles() {
 
         if (files.length === 0) {
             console.warn('No supported image or video files found in the folder.');
-            document.getElementById('media-container').innerHTML = '<p>No media found.</p>';
+            document.getElementById('media-container').innerHTML = '<p>No media found in the specified folder.</p>';
             return;
         }
 
@@ -64,7 +64,7 @@ function fetchFiles() {
 }
 
 function getFileUrl(fileId) {
-    return `/api/proxy?id=${fileId}`; // Use proxy endpoint
+    return `/api/proxy?id=${fileId}`;
 }
 
 async function showNextSlide() {
@@ -92,8 +92,9 @@ async function showNextSlide() {
         imageElement.src = fileUrl;
         imageElement.style.display = 'block';
         imageElement.onerror = () => {
-            console.error('Error loading image:', file.name);
-            showNextSlide(); // Skip to next slide on error
+            console.error('Error loading image:', file.name, 'URL:', fileUrl);
+            document.getElementById('media-container').innerHTML = `<p>Error loading ${file.name}. Skipping...</p>`;
+            setTimeout(showNextSlide, 2000); // Show error briefly, then skip
         };
         slideTimeout = setTimeout(showNextSlide, IMAGE_DURATION);
     } else if (VIDEO_MIMETYPES.includes(file.mimeType)) {
@@ -101,13 +102,15 @@ async function showNextSlide() {
         videoElement.style.display = 'block';
         videoElement.onended = showNextSlide;
         videoElement.onerror = () => {
-            console.error('Error loading video:', file.name);
-            showNextSlide(); // Skip to next slide on error
+            console.error('Error loading video:', file.name, 'URL:', fileUrl);
+            document.getElementById('media-container').innerHTML = `<p>Error loading ${file.name}. Skipping...</p>`;
+            setTimeout(showNextSlide, 2000); // Show error briefly, then skip
         };
         videoElement.load();
         videoElement.play().catch(error => {
-            console.error('Error playing video:', error);
-            showNextSlide();
+            console.error('Error playing video:', file.name, error);
+            document.getElementById('media-container').innerHTML = `<p>Error playing ${file.name}. Skipping...</p>`;
+            setTimeout(showNextSlide, 2000);
         });
     } else {
         console.warn(`Unsupported file type: ${file.mimeType} for file: ${file.name}`);

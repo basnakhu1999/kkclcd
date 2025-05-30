@@ -20,7 +20,8 @@ async function fetchFiles() {
 
         files = data.files
             .filter(file => {
-                const ext = file.public_id.split('.').pop().toLowerCase();
+                // ดึงนามสกุลจาก secure_url
+                const ext = file.secure_url.split('.').pop().toLowerCase();
                 const isSupported = IMAGE_EXTENSIONS.includes(ext) || VIDEO_EXTENSIONS.includes(ext);
                 if (!isSupported) {
                     console.warn('Unsupported file:', file.public_id, 'Extension:', ext);
@@ -29,7 +30,8 @@ async function fetchFiles() {
             })
             .map(file => ({
                 url: file.secure_url,
-                type: IMAGE_EXTENSIONS.includes(file.public_id.split('.').pop().toLowerCase()) ? 'image' : 'video'
+                // ใช้ secure_url สำหรับตรวจสอบประเภทไฟล์
+                type: IMAGE_EXTENSIONS.includes(file.secure_url.split('.').pop().toLowerCase()) ? 'image' : 'video'
             }));
 
         console.log('Filtered files:', files.length, files.map(f => f.url));

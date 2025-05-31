@@ -45,20 +45,21 @@ async function displayNextFile() {
     const url = cachedFiles[currentIndex];
     console.log("Displaying file:", url);
 
-    await fadeOut(container);
+    // ซ่อนทั้งคู่ก่อน
+    imageElement.style.opacity = 0;
+    videoElement.style.opacity = 0;
 
-    imageElement.style.display = "none";
-    videoElement.style.display = "none";
-
+    // เลือกแสดงชนิดของ media
     if (url.endsWith(".mp4")) {
         videoElement.src = url;
         videoElement.load();
-        videoElement.style.opacity = 0;
-        videoElement.onloadeddata = async () => {
+        videoElement.onloadeddata = () => {
             imageElement.style.display = "none";
             videoElement.style.display = "block";
-            await fadeIn(container);
             videoElement.play();
+            setTimeout(() => {
+                videoElement.style.opacity = 1;
+            }, 50);
         };
         videoElement.onerror = () => {
             console.error("Error loading video:", url);
@@ -70,13 +71,18 @@ async function displayNextFile() {
         videoElement.pause();
         videoElement.removeAttribute("src");
         videoElement.load();
-
+        videoElement.style.display = "none";
         imageElement.style.display = "block";
-        await fadeIn(container);
 
-        setTimeout(next, 10000); // Show image for 10 sec
+        // Fade-in image
+        setTimeout(() => {
+            imageElement.style.opacity = 1;
+        }, 50);
+
+        setTimeout(next, 3000); // Show image for 3 sec
     }
 }
+
 
 function next() {
     currentIndex = (currentIndex + 1) % cachedFiles.length;

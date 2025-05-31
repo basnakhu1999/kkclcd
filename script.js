@@ -1,81 +1,81 @@
-const cloudName = "daopyjiux";
-const folderName = "video";
+console.log("Document loaded, starting slideshow");
 
 const imageElement = document.getElementById("slide-image");
 const videoElement = document.getElementById("slide-video");
+const container = document.getElementById("media-container");
 
 let cachedFiles = [];
 let currentIndex = 0;
 
-// เก็บ preload object
-let preloadImages = {};
-let preloadVideos = {};
-
-document.addEventListener("DOMContentLoaded", () => {
-    console.log("Document loaded, starting slideshow");
-    fetchCloudinaryFiles();
-});
-
-async function fetchCloudinaryFiles() {
+async function fetchFiles() {
     console.log("Fetching files from Cloudinary...");
-    try {
-        const response = await fetch(`https://res.cloudinary.com/${cloudName}/image/list/${folderName}.json`);
-        const data = await response.json();
+    const response = await fetch("/api/list-files");
+    const data = await response.json();
 
-        const files = data.resources
-            .filter(file => /\.(jpg|jpeg|png|gif|mp4)$/i.test(file.public_id))
-            .map(file => {
-                const extension = file.format;
-                const typeFolder = extension === "mp4" ? "video" : "image";
-                return `https://res.cloudinary.com/${cloudName}/${typeFolder}/upload/${file.public_id}.${extension}`;
-            });
+    const filtered = data.files
+        .map(file => file.secure_url)
+        .filter(url => url.endsWith(".jpg") || url.endsWith(".png") || url.endsWith(".mp4"));
 
-        console.log("Filtered files:", files);
-        await preloadAllFiles(files);
-
-    } catch (error) {
-        console.error("Error fetching Cloudinary files:", error);
-    }
+    cachedFiles = filtered;
+    console.log("Cached files:", cachedFiles.length, cachedFiles);
 }
 
-async function preloadAllFiles(files) {
-    const preloadPromises = files.map(url => {
-        if (url.endsWith(".mp4")) {
-            return new Promise(resolve => {
-                const video = document.createElement("video");
-                video.src = url;
-                video.muted = true;
-                video.preload = "auto";
-                video.addEventListener("canplaythrough", () => {
-                    preloadVideos[url] = video;
-                    resolve(url);
-                });
-                video.addEventListener("error", () => {
-                    console.warn("Failed to preload video:", url);
-                    resolve(null); // Don't include failed video
-                });
-            });
-        } else {
-            return new Promise(resolve => {
-                const img = new Image();
-                img.src = url;
-                img.onload = () => {
-                    preloadImages[url] = img;
-                    resolve(url);
-                };
-                img.onerror = () => {
-                    console.warn("Failed to preload image:", url);
-                    resolve(null);
-                };
-            });
-        }
+function fadeOut(element, duration = 500) {
+    return new Promise(resolve => {
+        element.style.transition = `opacity ${duration}ms`;
+        element.style.opacity = 0;
+        setTimeout(resolve, duration);
     });
+}
 
-    const loadedFiles = await Promise.all(preloadPromises);
-    cachedFiles = loadedFiles.filter(Boolean); // Remove failed/null entries
+function fadeIn(element, duration = 500) {
+    return new Promise(resolve => {
+        element.style.display = "block";
+        requestAnimationFrame(() => {
+            element.style.transition = `opacity ${duration}ms`;
+            element.style.opacity = 1;
+            setTimeout(resolve, duration);
+        });
+    });
+}
 
-    console.log("Preloaded and cached:", cachedFiles);
-    displayNextFile();
+async function displayNextFile() {
+    if (cachedFiles.length === 0) return;
+
+    const url = cachedFiles[currentIndex];
+    console.log("Displaying file:", url);
+
+    await fadeOut(container);
+
+    imageElement.style.display = "none";
+    videoElement.style.display = "none";
+
+    if (url.endsWith(".mp4")) {
+        videoElement.src = url;
+        videoElement.load();
+        videoElement.style.opacity = 0;
+        videoElement.onloadeddata = async () => {
+            imageElement.style.display = "none";
+            videoElement.style.display = "block";
+            await fadeIn(container);
+            videoElement.play();
+        };
+        videoElement.onerror = () => {
+            console.error("Error loading video:", url);
+            next();
+        };
+        videoElement.onended = next;
+    } else {
+        imageElement.src = url;
+        videoElement.pause();
+        videoElement.removeAttribute("src");
+        videoElement.load();
+
+        imageElement.style.display = "block";
+        await fadeIn(container);
+
+        setTimeout(next, 10000); // Show image for 10 sec
+    }
 }
 
 function next() {
@@ -83,59 +83,10 @@ function next() {
     displayNextFile();
 }
 
-function displayNextFile() {
-    if (cachedFiles.length === 0) return;
-
-    const url = cachedFiles[currentIndex];
-    console.log("Displaying file:", url);
-
-    imageElement.style.opacity = 0;
-    videoElement.style.opacity = 0;
-
-    if (url.endsWith(".mp4")) {
-        const video = preloadVideos[url];
-        if (!video) {
-            console.error("Video not cached:", url);
-            next();
-            return;
-        }
-
-        videoElement.src = video.src;
-        videoElement.load();
-
-        imageElement.style.display = "none";
-        videoElement.style.display = "block";
-
-        setTimeout(() => {
-            videoElement.style.opacity = 1;
-            videoElement.play();
-        }, 50);
-
-        videoElement.onended = next;
-        videoElement.onerror = () => {
-            console.error("Error playing video:", url);
-            next();
-        };
-    } else {
-        const img = preloadImages[url];
-        if (!img) {
-            console.error("Image not cached:", url);
-            next();
-            return;
-        }
-
-        imageElement.src = img.src;
-        videoElement.pause();
-        videoElement.removeAttribute("src");
-        videoElement.load();
-
-        videoElement.style.display = "none";
-        imageElement.style.display = "block";
-
-        setTimeout(() => {
-            imageElement.style.opacity = 1;
-        }, 50);
-
-        setTimeout(next, 3000);
+(async function start() {
+    await fetchFiles();
+    if (cachedFiles.length > 0) {
+        container.style.opacity = 1;
+        displayNextFile();
     }
-}
+})();

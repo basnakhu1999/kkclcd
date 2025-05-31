@@ -20,15 +20,18 @@ async function fetchFiles() {
     console.log("Cached files:", cachedFiles.length, cachedFiles);
 }
 
-function fadeOut(element, duration = 500) {
+function fadeOut(element, duration = 2000) {
     return new Promise(resolve => {
         element.style.transition = `opacity ${duration}ms`;
         element.style.opacity = 0;
-        setTimeout(resolve, duration);
+        setTimeout(() => {
+            element.style.display = "none";
+            resolve();
+        }, duration);
     });
 }
 
-function fadeIn(element, duration = 500) {
+function fadeIn(element, duration = 2000) {
     return new Promise(resolve => {
         element.style.display = "block";
         requestAnimationFrame(() => {
@@ -45,44 +48,47 @@ async function displayNextFile() {
     const url = cachedFiles[currentIndex];
     console.log("Displaying file:", url);
 
-    // ซ่อนทั้งคู่ก่อน
-    imageElement.style.opacity = 0;
-    videoElement.style.opacity = 0;
+    const isVideo = url.endsWith(".mp4");
 
-    // เลือกแสดงชนิดของ media
-    if (url.endsWith(".mp4")) {
+    // Fade out current media
+    await Promise.all([
+        fadeOut(imageElement, 1000),
+        fadeOut(videoElement, 1000)
+    ]);
+
+    // Clear and prepare
+    imageElement.style.display = "none";
+    videoElement.style.display = "none";
+
+    if (isVideo) {
         videoElement.src = url;
         videoElement.load();
-        videoElement.onloadeddata = () => {
+
+        videoElement.onloadeddata = async () => {
             imageElement.style.display = "none";
             videoElement.style.display = "block";
             videoElement.play();
-            setTimeout(() => {
-                videoElement.style.opacity = 1;
-            }, 50);
+            await fadeIn(videoElement, 1000);
         };
+
         videoElement.onerror = () => {
             console.error("Error loading video:", url);
             next();
         };
+
         videoElement.onended = next;
+
     } else {
         imageElement.src = url;
         videoElement.pause();
         videoElement.removeAttribute("src");
         videoElement.load();
-        videoElement.style.display = "none";
+
         imageElement.style.display = "block";
-
-        // Fade-in image
-        setTimeout(() => {
-            imageElement.style.opacity = 1;
-        }, 50);
-
-        setTimeout(next, 3000); // Show image for 3 sec
+        await fadeIn(imageElement, 1000);
+        setTimeout(next, 10000); // Show image for 10 sec
     }
 }
-
 
 function next() {
     currentIndex = (currentIndex + 1) % cachedFiles.length;

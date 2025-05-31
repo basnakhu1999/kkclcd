@@ -1,110 +1,92 @@
-const IMAGE_EXTENSIONS = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
-const VIDEO_EXTENSIONS = ['mp4', 'webm', 'ogg'];
-const IMAGE_DURATION = 30000; // 30 seconds
-const CHECK_INTERVAL = 3600000; // 1 hour
+console.log("Document loaded, starting slideshow");
 
-let files = [];
+const imageElement = document.getElementById("slide-image");
+const videoElement = document.getElementById("slide-video");
+const container = document.getElementById("media-container");
+
+let cachedFiles = [];
 let currentIndex = 0;
-let slideTimeout;
 
 async function fetchFiles() {
-    console.log('Fetching files from Cloudinary...');
-    try {
-        const response = await fetch('/api/list-files');
-        const data = await response.json();
-        console.log('Response from /api/list-files:', JSON.stringify(data, null, 2));
+    console.log("Fetching files from Cloudinary...");
+    const response = await fetch("/api/list-files");
+    const data = await response.json();
 
-        if (!response.ok || data.error) {
-            throw new Error(data.error || 'Failed to fetch files');
-        }
+    const filtered = data.files
+        .map(file => file.secure_url)
+        .filter(url => url.endsWith(".jpg") || url.endsWith(".png") || url.endsWith(".mp4"));
 
-        files = data.files
-            .filter(file => {
-                const ext = file.secure_url.split('.').pop().toLowerCase();
-                const isSupported = IMAGE_EXTENSIONS.includes(ext) || VIDEO_EXTENSIONS.includes(ext);
-                if (!isSupported) {
-                    console.warn('Unsupported file:', file.public_id, 'Extension:', ext);
-                }
-                return isSupported;
-            })
-            .map(file => ({
-                url: file.secure_url,
-                type: IMAGE_EXTENSIONS.includes(file.secure_url.split('.').pop().toLowerCase()) ? 'image' : 'video'
-            }));
-
-        console.log('Filtered files:', files.length, files.map(f => f.url));
-        if (files.length === 0) {
-            console.warn('No supported files found.');
-            document.getElementById('media-container').innerHTML = '<p>No media found.</p>';
-            return;
-        }
-
-        if (currentIndex >= files.length) {
-            currentIndex = 0;
-        }
-
-        showNextSlide();
-    } catch (error) {
-        console.error('Error fetching files:', error);
-        document.getElementById('media-container').innerHTML = '<p>Error loading media. Please try again later.</p>';
-    }
+    cachedFiles = filtered;
+    console.log("Cached files:", cachedFiles.length, cachedFiles);
 }
 
-function showNextSlide() {
-    clearTimeout(slideTimeout);
+function fadeOut(element, duration = 500) {
+    return new Promise(resolve => {
+        element.style.transition = `opacity ${duration}ms`;
+        element.style.opacity = 0;
+        setTimeout(resolve, duration);
+    });
+}
 
-    const imageElement = document.getElementById('slide-image');
-    const videoElement = document.getElementById('slide-video');
+function fadeIn(element, duration = 500) {
+    return new Promise(resolve => {
+        element.style.display = "block";
+        requestAnimationFrame(() => {
+            element.style.transition = `opacity ${duration}ms`;
+            element.style.opacity = 1;
+            setTimeout(resolve, duration);
+        });
+    });
+}
 
-    imageElement.style.display = 'none';
-    videoElement.style.display = 'none';
-    videoElement.pause();
-    videoElement.src = '';
+async function displayNextFile() {
+    if (cachedFiles.length === 0) return;
 
-    if (files.length === 0) {
-        console.warn('No files to display.');
-        return;
-    }
+    const url = cachedFiles[currentIndex];
+    console.log("Displaying file:", url);
 
-    const file = files[currentIndex];
-    console.log('Displaying file:', file.url);
+    await fadeOut(container);
 
-    if (file.type === 'image') {
-        imageElement.src = file.url;
-        imageElement.style.display = 'block';
-        imageElement.onerror = () => {
-            console.error('Error loading image:', file.url);
-            document.getElementById('media-container').innerHTML = `<p>Error loading ${file.url}. Skipping...</p>`;
-            setTimeout(showNextSlide, 2000);
-        };
-        slideTimeout = setTimeout(showNextSlide, IMAGE_DURATION);
-    } else if (file.type === 'video') {
-        videoElement.src = file.url;
-        videoElement.preload = 'auto';
-        videoElement.style.display = 'block';
+    imageElement.style.display = "none";
+    videoElement.style.display = "none";
 
-        videoElement.onended = showNextSlide;
-        videoElement.onerror = () => {
-            console.error('Error loading video:', file.url);
-            setTimeout(showNextSlide, 2000);
-        };
-
+    if (url.endsWith(".mp4")) {
+        videoElement.src = url;
         videoElement.load();
-        videoElement.play()
-            .then(() => {
-                console.log('Video started playing:', file.url);
-            })
-            .catch(error => {
-                console.error('Error playing video:', file.url, error);
-                setTimeout(showNextSlide, 2000);
-            });
-    }
+        videoElement.style.opacity = 0;
+        videoElement.onloadeddata = async () => {
+            imageElement.style.display = "none";
+            videoElement.style.display = "block";
+            await fadeIn(container);
+            videoElement.play();
+        };
+        videoElement.onerror = () => {
+            console.error("Error loading video:", url);
+            next();
+        };
+        videoElement.onended = next;
+    } else {
+        imageElement.src = url;
+        videoElement.pause();
+        videoElement.removeAttribute("src");
+        videoElement.load();
 
-    currentIndex = (currentIndex + 1) % files.length;
+        imageElement.style.display = "block";
+        await fadeIn(container);
+
+        setTimeout(next, 3000); // Show image for 3 sec
+    }
 }
 
-document.addEventListener('DOMContentLoaded', () => {
-    console.log('Document loaded, starting slideshow');
-    fetchFiles();
-    setInterval(fetchFiles, CHECK_INTERVAL);
-});
+function next() {
+    currentIndex = (currentIndex + 1) % cachedFiles.length;
+    displayNextFile();
+}
+
+(async function start() {
+    await fetchFiles();
+    if (cachedFiles.length > 0) {
+        container.style.opacity = 1;
+        displayNextFile();
+    }
+})();

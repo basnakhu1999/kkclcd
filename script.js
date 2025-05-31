@@ -13,7 +13,7 @@ let isTransitioning = false;
 const config = {
     displayDuration: 120000,    // 2 minutes (120000ms)
     fadeDuration: 3000,         // 3 seconds for fade in/out
-    refreshInterval: 60000      // 1 minute (60000ms)
+    refreshInterval: 600000      // 1 minute (60000ms)
 };
 
 async function initializeSlideshow() {

@@ -4,17 +4,17 @@ const imageElement = document.getElementById("slide-image");
 const videoElement = document.getElementById("slide-video");
 const container = document.getElementById("media-container");
 
-// Configuration variables
+// การตั้งค่าตัวแแปร
 const config = {
-    // Display durations in milliseconds
-    imageDisplayDuration: 10000,    // 5 seconds for images
-    videoLoopCount: 2,             // Loop videos 2 times
+    // ตั้งค่าการแสดงผลรูปและวิดีโอ
+    imageDisplayDuration: 10000,    // 5 seconds for รูปภาพ
+    videoLoopCount: 2,             // Loop videos จำนวนครั้ง
     
     // Auto-refresh interval
-    refreshInterval: 60000,        // 1 minute
+    refreshInterval: 60000,        // กำหนดค่าเพื่อโหลดข้อมูลใหม่จาก Drive ก็ไฟล์ ค่าเป็นวินาที 60000= 1นาที
     
     // Transition effects
-    fadeDuration: 1000             // 1 second fade duration
+    fadeDuration: 1000             // 1 วินาทีสำหรับการเฟดเปลี่ยนรูป-วิดีโอ
 };
 
 let cachedFiles = [];

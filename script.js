@@ -7,7 +7,7 @@ const container = document.getElementById("media-container");
 // Configuration variables
 const config = {
     // Display durations in milliseconds
-    imageDisplayDuration: 5000,    // 5 seconds for images
+    imageDisplayDuration: 10000,    // 5 seconds for images
     videoLoopCount: 2,             // Loop videos 2 times
     
     // Auto-refresh interval
